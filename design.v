@@ -46,3 +46,54 @@ module nBitFullAddSub #(parameter WIDTH) (
     assign cOut = carry[WIDTH];
 
 endmodule
+
+module nBitMultiplicator #(parameter WIDTH = 4) (
+    input  [WIDTH-1:0] in1,
+    input  [WIDTH-1:0] in2, 
+    output [2*WIDTH-1:0] o 
+);
+
+    wire [WIDTH-1:0] partialProds [WIDTH-1:0];
+
+    wire [WIDTH-1:0] sumOfRows [WIDTH-1:0];
+    wire [WIDTH-1:0] rowCarry;
+
+    genvar r, c;
+    generate
+        for (r = 0; r < WIDTH; r = r + 1) begin : rowGen
+            for (c = 0; c < WIDTH; c = c + 1) begin : colGun
+                assign partialProds[r][c] = in1[c] & in2[r];
+            end
+        end
+    endgenerate
+
+    assign o[0] = partialProds[0][0];
+    
+    wire [WIDTH-1:0] firstAcc = {1'b0, partialProds[0][WIDTH-1:1]};
+    
+    generate
+        for (r = 1; r < WIDTH; r = r + 1) begin : rowAdders
+            wire [WIDTH-1:0] accumIn = (r == 1) ? firstAcc : {rowCarry[r-1], sumOfRows[r-1][WIDTH-1:1]};
+
+            nBitFullAddSub #(.WIDTH(WIDTH)) rowAdder (
+                .a(accumIn),
+                .b(partialProds[r]),
+                .cIn(1'b0),
+                .sub(1'b0),
+                .out(sumOfRows[r]),
+                .cOut(rowCarry[r])
+            );
+
+            assign o[r] = sumOfRows[r][0];
+        end
+    endgenerate
+
+    generate
+        for (c = 1; c < WIDTH; c = c + 1) begin : finalBits
+            assign o[WIDTH - 1 + c] = sumOfRows[WIDTH-1][c];
+        end
+    endgenerate
+    
+    assign o[2*WIDTH-1] = rowCarry[WIDTH-1];
+
+endmodule
