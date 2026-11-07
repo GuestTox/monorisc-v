@@ -97,3 +97,7 @@ module nBitMultiplicator #(parameter WIDTH = 4) (
     assign o[2*WIDTH-1] = rowCarry[WIDTH-1];
 
 endmodule
+
+module 
+
+endmodule
